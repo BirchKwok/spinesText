@@ -4,6 +4,7 @@ import os
 import re
 from typing import List, Union, Set
 import logging
+
 try:
     import jieba_fast as jieba
     from jieba_fast import load_userdict, lcut
@@ -130,6 +131,7 @@ class TextSplitSentence:
 
 class TextCutWords(WordCut, TextSplitSentence):
     """文章分词"""
+
     def __init__(self, stopwords_path=None, domainwords_path=None, types='word', jieba_init=False):
         super(TextCutWords, self).__init__(stopwords_path, domainwords_path,
                                            types, jieba_init)
@@ -148,8 +150,8 @@ class TextCutWords(WordCut, TextSplitSentence):
 
         return words_list
 
-    def text_to_text(self, text, join_sep= ' ', sen_sep_re='。?!？！(……)： (...)\\n\\t(||)',
-                      filters: Union[List, None] = None, cut_all=False, clear_stopwords=False):
+    def text_to_text(self, text, join_sep=' ', sen_sep_re='。?!？！(……)： (...)\\n\\t(||)',
+                     filters: Union[List, None] = None, cut_all=False, clear_stopwords=False):
         """
         切词后按指定join_sep连接每个词汇
         """
