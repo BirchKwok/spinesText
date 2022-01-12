@@ -1,9 +1,9 @@
+import copy
 import os.path
 import numpy as np
 from collections import Counter
 from pandas import Series
 from spines_text.utils import batch_reader
-
 
 
 is_exist_path = lambda s: os.path.exists(s)
@@ -18,6 +18,7 @@ class TFIDFModel:
         self.tfidf_weight_dict = Counter({k: 1 for k in self.vocab})
         self.contain_doc_counter = Counter({k: 1 for k in self.vocab})
         self.doc_num = 0
+        self.__call__(encoding=encoding)
 
     @staticmethod
     def _split_words(string):
@@ -41,27 +42,31 @@ class TFIDFModel:
                 else:
                     return False
 
-    def _tf(self, word_list):
+    @staticmethod
+    def _tf(counter):
         """计算词频"""
-        c_list = Counter(word_list)  # list[str str str]
-        _ = np.sum(list(c_list.values()))
-        self.doc_num += _
-        for i in c_list:
-            c_list[i] /= _
+        counter_ = copy.deepcopy(counter)
+        _ = np.sum(list(counter_.values()))
+        for i in counter_:
+            counter_[i] /= _
 
-        return c_list
+        return counter_
 
-    def _contain_docs(self, doc_list):
+    @staticmethod
+    def _contain_docs(doc_list, counter):
         """计算包含vocab中每个词的文档数"""
-        for i in self.contain_doc_counter:
+        for i in counter:
             for j in doc_list:  # list[list[str str str]]
                 if i in j:
-                    self.contain_doc_counter[i] += 1
-        return
+                    counter[i] += 1
+        return counter
 
-    def _idf(self):
-        for i in self.contain_doc_counter:
-            self.tfidf_weight_dict = np.log(self.doc_num / (np.array(self.contain_doc_counter.values()) + 1))
+    @staticmethod
+    def _idf(counter, doc_num):
+        counter_ = copy.deepcopy(counter)
+        for i in counter_:
+            counter_[i] = np.log(doc_num / (counter_[i] + 1))
+        return counter_
 
     def __call__(self, encoding=None):
         """
@@ -73,9 +78,31 @@ class TFIDFModel:
                 encoding = sys.getdefaultencoding() if encoding is None else encoding
                 for lines in batch_reader(fp, encoding=encoding):  # list[str]
                     # 分词
-                    lines = [self._split_words(i) for i in lines]
+                    lines = [self._split_words(i) for i in lines]  # list[list[str]]
                     for line in lines:
-                        self._tf(line)
+                        # 统计词量
+                        self.vocab_counter += Counter(line)
+                        self.doc_num += 1
+                    # 统计文档数
+                    self.contain_doc_counter = self._contain_docs(lines, self.contain_doc_counter)
+        else:
+            for lines in batch_reader(self.fp):  # list[str]
+                # 分词
+                lines = [self._split_words(i) for i in lines]
+                for line in lines:
+                    # 统计词量
+                    self.vocab_counter += Counter(line)
+                    self.doc_num += 1
+                # 统计文档数
+                self.contain_doc_counter = self._contain_docs(lines, self.contain_doc_counter)
+
+        self.tfidf_weight_dict = self._tf(self.vocab_counter)
+        idf_dict = self._idf(self.contain_doc_counter, self.doc_num)
+        for i in self.tfidf_weight_dict:
+            self.tfidf_weight_dict[i] = self.tfidf_weight_dict[i] / idf_dict.get(i, 1)
+
+    def get_tfidf(self):
+        return self.tfidf_weight_dict
 
 
 
