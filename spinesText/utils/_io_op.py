@@ -8,11 +8,25 @@ from ._batch_op import iter_count
 from typing import *
 
 
-def json_rw(json_path, method='r', json_dict=None, encoding='utf-8', readlines:str = 'auto',
-            ensure_ascii=False) -> Union[Dict, List, None]:
+def json_rw(json_path: str, method: str = 'r', json_dict=None, encoding='utf-8', readlines: str = 'auto',
+            batch_size: int = 100, ensure_ascii: bool = False) -> Union[Dict, Iterator, None]:
     """
-    :param readlines: ['auto', 'direct', 'readline']
-    :return:
+    :param json_path: json file path
+    :param method: r for read method, w for write method, same as python open function method
+    :param json_dict: dict-like object, only be useful in write method
+    :param encoding: file encoding
+    :param readlines: one of 'auto', 'direct', 'readline', if readlines is 'direct',
+                        this function will load the whole file in memory directly,
+                        if readlines is 'readline', this function will read specify batch size lines every step,
+                        and return a iterator,
+                        if readlines is 'auto', if json file lines less than or equal to 1e5, default to 'direct' mode,
+                        else will set to 'readline' mode
+    :param batch_size: read batch_size lines from every step, must be greater than or equal to 1,
+                        no effect for the time being
+    :param ensure_ascii: if ensure_ascii is true (the default), the output is guaranteed to have all
+                        incoming non-ASCII characters escaped.
+                        if ensure_ascii is false, these characters will be output as-is.
+    :return: Union[Dict, iterator, None]
     """
     assert readlines in ['auto', 'direct', 'readline'], "readlines param must be one in " \
                                                         "['auto', 'direct', 'readline']"
@@ -20,9 +34,9 @@ def json_rw(json_path, method='r', json_dict=None, encoding='utf-8', readlines:s
         if 'b' in method:
             encoding = None
         try:
+            rows = iter_count(json_path, encoding=encoding)
             if readlines == 'auto':
-                rows = iter_count(json_path, encoding=encoding)
-                if rows <= 1e5:
+                if rows <= 1e6:
                     return json_rw(json_path, encoding=encoding, readlines='direct')
                 else:
                     return json_rw(json_path, encoding=encoding, readlines='readline')
@@ -31,18 +45,13 @@ def json_rw(json_path, method='r', json_dict=None, encoding='utf-8', readlines:s
                     _ = json.load(f)
                 return _
             elif readlines == 'readline':
-                with open(json_path, method, encoding=encoding) as f:
-                    _ = []
-                    for line in f.readlines():
-                        dic = json.loads(line)
-                        _.append(dic)
-                return _
+                raise NotImplementedError("JSON file is too large.")
 
         except FileNotFoundError:
             raise FileNotFoundError(f"No such file or directory:{json_path}")
 
     elif 'w' in method or 'a' in method:
-        if 'b'  in method:
+        if 'b' in method:
             encoding = None
         if json_dict is None:
             raise ValueError("If method is 'w', the parameter json_dict must be not None.")
@@ -63,7 +72,7 @@ def return_useful_mem():
     # 系统空闲内存
     kx = float(mem.free) / 1024 / 1024 / 1024
 
-    print(f'# 系统总计内存:{round(zj, 2)}GB, 已用{round(ysy, 2)}GB, 可用{round(kx, 2)}GB.' )
+    print(f'# 系统总计内存:{round(zj, 2)}GB, 已用{round(ysy, 2)}GB, 可用{round(kx, 2)}GB.')
 
 
 def find_last_modify_file(fpath):
@@ -72,11 +81,11 @@ def find_last_modify_file(fpath):
     list_ = os.listdir(fpath)
     assert len(list_) > 0, f'directory {fpath} is empty.'
     # 对文件修改时间进行升序排列
-    list_.sort(key=lambda fn:os.path.getmtime(fpath+'\\'+fn))
+    list_.sort(key=lambda fn: os.path.getmtime(fpath + '\\' + fn))
     # 获取最新修改时间的文件
-    filetime = datetime.datetime.fromtimestamp(os.path.getmtime(fpath+list_[-1]))
+    filetime = datetime.datetime.fromtimestamp(os.path.getmtime(fpath + list_[-1]))
     # 获取文件所在目录
-    filepath = os.path.join(fpath,list_[-1])
+    filepath = os.path.join(fpath, list_[-1])
     return filepath
 
 

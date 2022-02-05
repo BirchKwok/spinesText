@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 from collections import Counter
 from pandas import Series
-from spines_text.utils import batch_reader
+from spinesText.utils import batch_reader
 
 
 is_exist_path = lambda s: os.path.exists(s)

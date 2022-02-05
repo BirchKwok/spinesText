@@ -1,14 +1,14 @@
 import collections
 import warnings
-from spines_text.base import VocabMixin
+from spinesText.base import VocabMixin
 import datetime
 import gc
 import os.path
 import time
 from typing import Dict, Union
 import numpy as np
-from spines_text.preprocess._text_split import TextCutWords, TextSplitSentence
-from spines_text.utils import batch_reader, iter_count, json_rw, return_useful_mem
+from spinesText.preprocess._text_split import TextCutWords, TextSplitSentence
+from spinesText.utils import batch_reader, iter_count, json_rw, return_useful_mem
 
 
 def count_corpus(tokens):

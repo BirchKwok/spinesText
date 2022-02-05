@@ -1,6 +1,6 @@
 import numpy as np
 
-from spines_text.utils import json_rw
+from spinesText.utils import json_rw
 
 
 class KerasMixin:
