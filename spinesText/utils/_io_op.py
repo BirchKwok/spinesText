@@ -8,45 +8,25 @@ from ._batch_op import iter_count
 from typing import *
 
 
-def json_rw(json_path: str, method: str = 'r', json_dict=None, encoding='utf-8', readlines: str = 'auto',
-            batch_size: int = 100, ensure_ascii: bool = False) -> Union[Dict, Iterator, None]:
+def json_rw(json_path: str, method: str = 'r', json_dict=None, encoding='utf-8',
+            ensure_ascii: bool = False) -> Union[Dict, Iterator, None]:
     """
     :param json_path: json file path
     :param method: r for read method, w for write method, same as python open function method
     :param json_dict: dict-like object, only be useful in write method
     :param encoding: file encoding
-    :param readlines: one of 'auto', 'direct', 'readline', if readlines is 'direct',
-                        this function will load the whole file in memory directly,
-                        if readlines is 'readline', this function will read specify batch size lines every step,
-                        and return a iterator,
-                        if readlines is 'auto', if json file lines less than or equal to 1e5, default to 'direct' mode,
-                        else will set to 'readline' mode
-    :param batch_size: read batch_size lines from every step, must be greater than or equal to 1,
-                        no effect for the time being
     :param ensure_ascii: if ensure_ascii is true (the default), the output is guaranteed to have all
                         incoming non-ASCII characters escaped.
                         if ensure_ascii is false, these characters will be output as-is.
     :return: Union[Dict, iterator, None]
     """
-    assert readlines in ['auto', 'direct', 'readline'], "readlines param must be one in " \
-                                                        "['auto', 'direct', 'readline']"
     if 'r' in method:
         if 'b' in method:
             encoding = None
         try:
-            rows = iter_count(json_path, encoding=encoding)
-            if readlines == 'auto':
-                if rows <= 1e6:
-                    return json_rw(json_path, encoding=encoding, readlines='direct')
-                else:
-                    return json_rw(json_path, encoding=encoding, readlines='readline')
-            elif readlines == 'direct':
-                with open(json_path, method, encoding=encoding) as f:
-                    _ = json.load(f)
-                return _
-            elif readlines == 'readline':
-                raise NotImplementedError("JSON file is too large.")
-
+            with open(json_path, method, encoding=encoding) as f:
+                _ = json.load(f)
+            return _
         except FileNotFoundError:
             raise FileNotFoundError(f"No such file or directory:{json_path}")
 
@@ -58,7 +38,6 @@ def json_rw(json_path: str, method: str = 'r', json_dict=None, encoding='utf-8',
 
         with open(json_path, method, encoding=encoding) as f:
             json.dump(json_dict, f, ensure_ascii=ensure_ascii)
-
         return
 
 
